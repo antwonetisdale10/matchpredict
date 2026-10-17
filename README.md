@@ -172,8 +172,6 @@ and a calibration chart.
 
 ## Known limits
 
-- The model does not know the 2025/26 season, transfers, injuries or managers. Upload 2025/26 in Data Studio
-  to improve it.
 - The fixture source listed scores for dates that had not happened yet, so only the fixtures were used.
 - No club badges are used. Team colours are decorative.
 - Data Studio is open to any signed-in user by default, for local use. Before hosting this publicly, set
