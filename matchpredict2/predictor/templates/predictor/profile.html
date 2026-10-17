@@ -1,0 +1,20 @@
+{% extends "predictor/base.html" %}{% load mdy %}
+{% block title %}Your predictions{% endblock %}
+{% block content %}
+<section class="hero" style="padding-top:8px"><div class="eyebrow">Signed in as {{ user.username }}</div><h1>Your predictions</h1></section>
+<section style="margin-top:24px"><div class="card"><div class="row wrap" style="gap:28px">
+  <div class="ring" style="--p:{{ ring }}"><div><div><b>{{ s.points }}</b><br><span>points</span></div></div></div>
+  <div class="grow" style="min-width:220px"><div class="eyebrow">Level</div><h2>{{ s.level.name }}</h2>
+    {% if s.level.next_name %}<p class="muted" style="margin:6px 0 0"><b>{{ to_next }}</b> more points to reach <b>{{ s.level.next_name }}</b>.</p>{% else %}<p class="muted">Top level reached.</p>{% endif %}</div>
+  <div class="grid g2 g-keep2" style="gap:18px 30px">
+    <div class="stat"><b>{{ s.made }}</b><span>Picks made</span></div><div class="stat"><b>{% if s.accuracy is None %}–{% else %}{{ s.accuracy|pct }}{% endif %}</b><span>Results right</span></div>
+    <div class="stat"><b>{{ s.exact }}</b><span>Exact scores</span></div><div class="stat"><b>{{ s.streak }}</b><span>Current streak</span></div></div>
+</div></div></section>
+<section><div class="sec-head"><h2>Badges</h2></div><div class="badges">{% for b in badges %}<div class="badge {% if not b.got %}locked{% endif %}"><div class="medal">{{ b.name|first }}</div><b>{{ b.name }}</b><span>{{ b.desc }}</span></div>{% endfor %}</div></section>
+<section><div class="sec-head"><h2>Waiting for results</h2></div>
+{% if pending %}<div class="card tblcard"><table class="tbl"><tbody>{% for p in pending %}<tr onclick="location.href='{% url 'match' p.match.id %}'" style="cursor:pointer"><td><b>{{ p.match.home.short }} v {{ p.match.away.short }}</b><div class="tiny muted"><time datetime="{{ p.match.kickoff|local_iso }}" data-fmt="short">{{ p.match.kickoff|date:"D j M, H:i" }}</time></div></td><td class="r"><span class="chip accent">You: {{ p.home_goals }}–{{ p.away_goals }}</span> {% if p.match.prediction %}<span class="chip">Model: {{ p.match.prediction.pred_home }}–{{ p.match.prediction.pred_away }}</span>{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+{% else %}<div class="card"><p class="muted" style="margin:0">Nothing pending. <a href="{% url 'matches' %}">Pick some matches →</a></p></div>{% endif %}</section>
+<section><div class="sec-head"><h2>Scored</h2></div>
+{% if done %}<div class="card tblcard"><table class="tbl"><tbody>{% for p in done %}<tr onclick="location.href='{% url 'match' p.match.id %}'" style="cursor:pointer"><td><b>{{ p.match.home.short }} {{ p.match.home_goals }}–{{ p.match.away_goals }} {{ p.match.away.short }}</b><div class="tiny muted">You: {{ p.home_goals }}–{{ p.away_goals }}{% for b in p.breakdown %} · {{ b.label }}{% endfor %}</div></td><td class="r pts {% if p.points %}pos{% endif %}">+{{ p.points }}</td></tr>{% endfor %}</tbody></table></div>
+{% else %}<div class="card"><p class="muted" style="margin:0">No scored picks yet.</p></div>{% endif %}</section>
+{% endblock %}

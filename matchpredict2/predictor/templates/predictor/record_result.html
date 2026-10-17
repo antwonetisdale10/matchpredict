@@ -1,0 +1,19 @@
+{% extends "predictor/base.html" %}{% load mdy %}
+{% block title %}Record result{% endblock %}
+{% block content %}
+<div class="narrow"><a class="btn ghost sm" href="{% url 'studio' %}">‹ Data Studio</a>
+<section class="hero" style="padding-top:8px"><div class="eyebrow">GW {{ m.matchweek }}</div><h1 style="font-size:2.4rem">{{ m.home.name }} v {{ m.away.name }}</h1></section>
+<form class="card stack" method="post" style="margin-top:20px">{% csrf_token %}
+  <div class="grid g2"><div class="field"><label>{{ m.home.short }} goals (full time)</label><input type="number" name="home_goals" min="0" value="{{ m.home_goals|default_if_none:'' }}" required></div><div class="field"><label>{{ m.away.short }} goals</label><input type="number" name="away_goals" min="0" value="{{ m.away_goals|default_if_none:'' }}" required></div>
+  <div class="field"><label>{{ m.home.short }} half-time</label><input type="number" name="ht_home" min="0" value="{{ m.ht_home|default_if_none:'' }}"></div><div class="field"><label>{{ m.away.short }} half-time</label><input type="number" name="ht_away" min="0" value="{{ m.ht_away|default_if_none:'' }}"></div>
+  <div class="field"><label>{{ m.home.short }} yellows</label><input type="number" name="home_yellow" min="0" value="{{ m.home_yellow|default_if_none:'' }}"></div><div class="field"><label>{{ m.away.short }} yellows</label><input type="number" name="away_yellow" min="0" value="{{ m.away_yellow|default_if_none:'' }}"></div>
+  <div class="field"><label>{{ m.home.short }} reds</label><input type="number" name="home_red" min="0" value="{{ m.home_red|default_if_none:'' }}"></div><div class="field"><label>{{ m.away.short }} reds</label><input type="number" name="away_red" min="0" value="{{ m.away_red|default_if_none:'' }}"></div>
+  <div class="field"><label>{{ m.home.short }} corners</label><input type="number" name="home_corners" min="0" value="{{ m.home_corners|default_if_none:'' }}"></div><div class="field"><label>{{ m.away.short }} corners</label><input type="number" name="away_corners" min="0" value="{{ m.away_corners|default_if_none:'' }}"></div>
+  <div class="field"><label>{{ m.home.short }} shots</label><input type="number" name="home_shots" min="0" value="{{ m.home_shots|default_if_none:'' }}"></div><div class="field"><label>{{ m.away.short }} shots</label><input type="number" name="away_shots" min="0" value="{{ m.away_shots|default_if_none:'' }}"></div>
+  <div class="field"><label>{{ m.home.short }} on target</label><input type="number" name="home_sot" min="0" value="{{ m.home_sot|default_if_none:'' }}"></div><div class="field"><label>{{ m.away.short }} on target</label><input type="number" name="away_sot" min="0" value="{{ m.away_sot|default_if_none:'' }}"></div>
+  <div class="field"><label>{{ m.home.short }} fouls</label><input type="number" name="home_fouls" min="0" value="{{ m.home_fouls|default_if_none:'' }}"></div><div class="field"><label>{{ m.away.short }} fouls</label><input type="number" name="away_fouls" min="0" value="{{ m.away_fouls|default_if_none:'' }}"></div></div>
+  <div class="field"><label>Goals, one per line: minute, H or A, scorer, assist (optional). Enables first-scorer and first-goal bonuses.</label>
+  <textarea name="events" placeholder="23 H Haaland Foden&#10;67 A Salah">{% for e in events %}{{ e.minute }} {% if e.team_id == m.home_id %}H{% else %}A{% endif %} {{ e.player }} {{ e.assist }}
+{% endfor %}</textarea></div>
+  <button class="btn lg" type="submit">Save result and score picks</button></form></div>
+{% endblock %}

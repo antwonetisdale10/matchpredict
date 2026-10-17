@@ -1,0 +1,12 @@
+{% extends "predictor/base.html" %}{% load mdy %}
+{% block title %}Players{% endblock %}
+{% block content %}
+<section class="hero" style="padding-top:8px"><div class="eyebrow">{{ season.label }}</div><h1>Golden Boot race</h1>
+<p class="lede">Expected league goals, adding each player's share of his team's goals across all 38 fixtures. Squads and last season's numbers only: no {{ season.label }} performance data.</p></section>
+<section style="margin-top:24px"><div class="grid g2" style="align-items:start">
+  <div class="card tblcard"><table class="tbl"><thead><tr><th>#</th><th>Player</th><th class="r">xG</th></tr></thead><tbody>
+  {% for n, t, g, pos, any in boot %}<tr><td class="pos">{{ forloop.counter }}</td><td><b>{{ n }}</b> <span class="muted tiny">{{ pos }} · {{ t }}</span></td><td class="r pts">{{ g|dec }}</td></tr>{% endfor %}</tbody></table></div>
+  <div class="card tblcard"><div style="padding:14px 16px 0"><h3>Card watch</h3><p class="note">Expected yellow cards over the season</p></div><table class="tbl"><tbody>
+  {% for n, t, v, pos in cards %}<tr><td class="pos">{{ forloop.counter }}</td><td><b>{{ n }}</b> <span class="muted tiny">{{ pos }} · {{ t }}</span></td><td class="r pts">{{ v|dec:1 }}</td></tr>{% endfor %}</tbody></table></div>
+</div></section>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "predictor/base.html" %}{% load mdy %}
+{% block title %}{{ team.name }}{% endblock %}
+{% block content %}
+<section class="hero" style="padding-top:8px"><div class="row" style="gap:18px">{% include "predictor/partials/crest.html" with t=team size="xl" %}<div><div class="eyebrow">{{ season.label }} · rated #{{ rank }} of {{ n_teams }}</div><h1>{{ team.name }}</h1></div></div></section>
+{% if proj %}
+<section style="margin-top:26px"><div class="grid g4 g-keep2">
+  <div class="card tight stat"><b>{{ proj.exp_rank|dec }}</b><span>Expected finish</span></div><div class="card tight stat"><b>{{ proj.exp_points|dec:0 }}</b><span>Projected points</span></div>
+  <div class="card tight stat"><b>{{ proj.p_top4|pct }}</b><span>Top-four chance</span></div><div class="card tight stat"><b>{{ proj.p_relegation|pct }}</b><span>Relegation risk</span></div></div></section>
+{% endif %}
+<section><div class="grid g2">
+  <div class="card"><div class="panel-title"><h3>Strengths</h3></div>
+    {% if rating %}<div class="row between small"><span class="muted">Attack</span><b class="num">{{ rating.attack|dec:2 }}× avg</b></div><div class="mini-bar"><i style="width:{% widthratio rating.attack 1.7 100 %}%;max-width:100%"></i></div>
+    <div class="row between small" style="margin-top:12px"><span class="muted">Defence</span><b class="num">{{ rating.defence|dec:2 }}× avg</b></div><div class="mini-bar"><i style="width:{% widthratio rating.defence 1.7 100 %}%;max-width:100%;background:var(--green)"></i></div>
+    <div class="row between small" style="margin-top:12px"><span class="muted">Yellow-card tendency</span><b class="num">{{ rating.detail.yellow|dec:2 }}×</b></div>
+    <div class="row between small" style="margin-top:6px"><span class="muted">Corners won</span><b class="num">{{ rating.detail.corners|dec:2 }}×</b></div>
+    {% if rating.newcomer %}<p class="note" style="margin-top:12px">Little recent top-flight data: the model leans on a newly-promoted prior.</p>{% endif %}{% endif %}</div>
+  <div class="card"><div class="panel-title"><h3>Season outlook</h3></div>
+    <div class="grid g2" style="gap:12px"><div><div class="eyebrow">Likely scorers</div><ul class="list">{% for n, v, pos in scorers %}<li><span class="nm">{{ n }}<span class="pos">{{ pos }}</span></span><span class="chip accent num">{{ v|dec }} xG</span></li>{% endfor %}</ul></div>
+    <div><div class="eyebrow">Card watch</div><ul class="list">{% for n, v, pos in booked %}<li><span class="nm">{{ n }}<span class="pos">{{ pos }}</span></span><span class="chip num" style="background:rgba(255,204,0,.2);color:#b38600">{{ v|dec:1 }}</span></li>{% endfor %}</ul></div></div></div>
+</div></section>
+<section><div class="sec-head"><div><h2>Fixtures</h2><p>Predicted result from {{ team.name }}'s side. Dot shows how tough the opponent is (green easy, red hard).</p></div></div>
+<div class="card tblcard"><table class="tbl"><thead><tr><th>GW</th><th>Opponent</th><th class="hide-m">Date</th><th class="r">Pred</th><th class="r hide-m">Win %</th><th class="r">Result</th></tr></thead><tbody>
+{% for f in fixtures %}<tr onclick="location.href='{% url 'match' f.m.id %}'" style="cursor:pointer">
+<td class="pos">{{ f.m.matchweek }}</td>
+<td><a class="row" href="{% url 'match' f.m.id %}" style="color:inherit;font-weight:600;gap:10px">{% include "predictor/partials/crest.html" with t=f.opp size="sm" %}{{ f.opp.name }}<span class="tiny muted">{% if f.home %}H{% else %}A{% endif %}</span><span class="diff {% if f.diff <= 7 %}h{% elif f.diff <= 13 %}m{% else %}e{% endif %}"></span></a></td>
+<td class="hide-m muted"><time datetime="{{ f.m.kickoff|local_iso }}" data-fmt="date">{{ f.m.kickoff|date:"D j M" }}</time></td>
+<td class="r" style="font-weight:700">{% if f.home %}{{ f.p.pred_home }}–{{ f.p.pred_away }}{% else %}{{ f.p.pred_away }}–{{ f.p.pred_home }}{% endif %}</td><td class="r hide-m">{{ f.win|pct }}</td>
+<td class="r">{% if f.m.played %}<b>{% if f.home %}{{ f.m.home_goals }}–{{ f.m.away_goals }}{% else %}{{ f.m.away_goals }}–{{ f.m.home_goals }}{% endif %}</b>{% else %}<span class="form-pill {{ f.letter }}">{{ f.letter }}</span>{% endif %}</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

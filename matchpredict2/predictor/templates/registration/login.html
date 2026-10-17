@@ -1,0 +1,11 @@
+{% extends "predictor/base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block content %}
+<div class="card login-card stack"><h1 style="font-size:2rem">Sign in</h1><p class="muted">Save predictions, earn points, climb the leaderboard.</p>
+<form method="post" class="stack">{% csrf_token %}<input type="hidden" name="next" value="{{ next }}">
+  <div class="field"><label for="id_username">Username</label><input type="text" name="username" id="id_username" autocomplete="username" autocapitalize="none" required autofocus></div>
+  <div class="field"><label for="id_password">Password</label><input type="password" name="password" id="id_password" autocomplete="current-password" required></div>
+  {% if form.errors %}<div class="flash error">That username and password don't match.</div>{% endif %}
+  <button class="btn lg" type="submit">Sign in</button></form>
+<p class="note center">New here? <a href="{% url 'signup' %}">Create an account</a></p></div>
+{% endblock %}

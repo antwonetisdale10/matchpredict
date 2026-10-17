@@ -1,0 +1,43 @@
+{% extends "predictor/base.html" %}{% load mdy %}
+{% block title %}Accuracy{% endblock %}
+{% block content %}
+<section class="hero" style="padding-top:8px"><div class="eyebrow">Backtest</div><h1>How good is the model?</h1>
+<p class="lede">For each past season, the model is rebuilt from earlier seasons only, with the most recent one hidden (a deliberately harder test than the live forecast, which does include 2025/26), then asked to predict every match.</p></section>
+<section style="margin-top:24px"><div class="callout"><b>No peeking.</b> {{ season.label|default:"The target season" }} predictions were made by training on <b>{{ train_note|default:"historical seasons" }}</b>. Results already recorded for {{ season.label }}: <b>{{ n_played_target }}</b>, and the model reads none of them: training data is filtered to seasons that start before the one being predicted, and a test confirms predictions don't change when 2026/27 results are altered.</div></section>
+{% if agg %}
+<section><div class="grid g4 g-keep2">
+  <div class="card tight stat"><b>{{ agg.accuracy|pct:1 }}</b><span>Results right · baseline {{ agg.baseline|pct:1 }}</span></div>
+  <div class="card tight stat"><b>{{ agg.log_loss|dec:3 }}</b><span>Log loss · baseline {{ agg.base_ll|dec:3 }} (lower is better)</span></div>
+  <div class="card tight stat"><b>{{ agg.rps|dec:3 }}</b><span>Ranked prob. score · baseline {{ agg.base_rps|dec:3 }}</span></div>
+  <div class="card tight stat"><b>{{ agg.exact|pct:1 }}</b><span>Exact scores right</span></div></div>
+  <p class="note" style="margin-top:12px">{{ agg.n }} matches across {{ agg.seasons }} seasons. The baseline always uses the historical home/draw/away rates. Predicting football is hard: even bookmaker odds usually land around 52–55% on the result, and exact scores are right roughly one match in ten.</p></section>
+<section><div class="grid g2" style="align-items:start">
+  <div class="card"><div class="panel-title"><h3>Calibration</h3></div><p class="note">When the model says X%, how often does that result happen? A perfectly calibrated model sits on the diagonal.</p>
+    <svg viewBox="0 0 320 240" style="width:100%;height:auto" role="img" aria-label="Calibration chart">
+      <line x1="40" y1="200" x2="300" y2="20" stroke="currentColor" stroke-opacity=".25" stroke-dasharray="4 4"/>
+      <line x1="40" y1="200" x2="300" y2="200" stroke="currentColor" stroke-opacity=".3"/><line x1="40" y1="20" x2="40" y2="200" stroke="currentColor" stroke-opacity=".3"/>
+      {% for c in agg.calib %}<g><circle class="pt" data-x="{{ c.pred|floatformat:4 }}" data-y="{{ c.actual|floatformat:4 }}" r="{% if c.n > 600 %}9{% elif c.n > 200 %}7{% else %}5{% endif %}" fill="var(--accent)"/></g>{% endfor %}
+      <text x="170" y="228" text-anchor="middle" font-size="11" fill="currentColor" opacity=".6">Predicted probability of top pick</text>
+      <text x="12" y="110" font-size="11" fill="currentColor" opacity=".6" transform="rotate(-90 12 110)" text-anchor="middle">Actually happened</text>
+    </svg>
+  </div>
+  <div class="card tblcard"><table class="tbl"><thead><tr><th>Season</th><th class="r">Right</th><th class="r">Log loss</th><th class="r hide-m">Exact</th></tr></thead><tbody>
+    {% for r in rows %}<tr><td><b>{{ r.season.label }}</b></td><td class="r">{{ r.metrics.accuracy|pct:1 }}</td><td class="r">{{ r.metrics.log_loss|dec:3 }}</td><td class="r hide-m">{{ r.metrics.exact_score|pct:1 }}</td></tr>{% endfor %}</tbody></table></div>
+</div></section>
+{% else %}<section><div class="empty">No backtest yet. Run <code>python manage.py backtest</code>.</div></section>{% endif %}
+<section><div class="sec-head"><div><h2>What's fitted, what's assumed</h2></div></div>
+<div class="grid g2" style="align-items:start">
+<div class="card"><h3>Learned from 20 seasons of results</h3><ul class="facts small" style="margin-top:12px">
+<li><span>Team attack and defence strength, plus home advantage, using a time-weighted Poisson model with the Dixon–Coles low-score fix (half-life 1.5 years)</span></li>
+<li><span>How goals split between the first and second half (about 44% before the break)</span></li>
+<li><span>Each team's yellow cards, reds, corners, shots and fouls, on the same footing</span></li></ul></div>
+<div class="card"><h3>Assumptions, because the data can't tell us</h3><ul class="facts small" style="margin-top:12px">
+<li><span>The match CSVs have no goal minutes, so timing within each half uses a standard rising-intensity curve and typical stoppage time</span></li>
+<li><span>Scorers and booked players come from last season's player numbers, not from this season's matches</span></li>
+<li><span>The penalty rate is a flat prior of about 0.28 per game, scaled by shot volume</span></li>
+<li><span>No injuries, suspensions, managers or referee; player shares use last season's numbers on the current squad. Teams with no recent top-flight data use a newly-promoted prior</span></li></ul></div>
+</div></section>
+{% endblock %}
+{% block scripts %}<script>
+document.querySelectorAll("circle.pt").forEach(c=>{c.setAttribute("cx",40+260*+c.dataset.x);c.setAttribute("cy",200-180*+c.dataset.y);});
+</script>{% endblock %}

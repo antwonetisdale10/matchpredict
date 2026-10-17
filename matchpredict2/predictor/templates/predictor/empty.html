@@ -1,0 +1,7 @@
+{% extends "predictor/base.html" %}
+{% block content %}
+<div class="empty"><h1>No predictions yet</h1><p class="lede">Load the data and run the model:</p>
+<pre style="display:inline-block;text-align:left;background:var(--surface);padding:16px 22px;border-radius:16px">python manage.py load_data
+python manage.py predict
+python manage.py backtest</pre></div>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% load mdy %}
+<div data-pickform>
+  <div class="center" style="padding:6px 0 14px">
+    <div class="eyebrow">Your prediction</div>
+    <h2 style="margin-top:4px">{{ match.home.name }} v {{ match.away.name }}</h2>
+    <div class="tiny muted" style="margin-top:4px"><time datetime="{{ match.kickoff|local_iso }}" data-fmt="long">{{ match.kickoff|date:"l j F, H:i" }}</time></div>
+  </div>
+  {% if locked %}
+    <div class="callout warn">Kick-off has passed, so predictions are closed.{% if pick %} Your pick: <b>{{ pick.home_goals }}–{{ pick.away_goals }}</b>.{% endif %}</div>
+  {% else %}
+  <form method="post" action="{% url 'pick' match.id %}" data-match="{{ match.id }}">
+    {% csrf_token %}
+    <div class="pickgrid">
+      <div><div class="tn">{% include "predictor/partials/crest.html" with t=match.home size="sm" %}{{ match.home.short }}</div>
+        <div class="stepper"><button data-d="-" aria-label="Fewer home goals">−</button><output>{% if pick %}{{ pick.home_goals }}{% else %}1{% endif %}</output><button data-d="+" aria-label="More home goals">+</button><input type="hidden" name="home_goals" value="{% if pick %}{{ pick.home_goals }}{% else %}1{% endif %}"></div></div>
+      <div class="muted" style="font-size:1.6rem;font-weight:700;padding-top:34px">–</div>
+      <div><div class="tn">{% include "predictor/partials/crest.html" with t=match.away size="sm" %}{{ match.away.short }}</div>
+        <div class="stepper"><button data-d="-" aria-label="Fewer away goals">−</button><output>{% if pick %}{{ pick.away_goals }}{% else %}1{% endif %}</output><button data-d="+" aria-label="More away goals">+</button><input type="hidden" name="away_goals" value="{% if pick %}{{ pick.away_goals }}{% else %}1{% endif %}"></div></div>
+    </div>
+    {% if p %}<div class="row between wrap" style="margin-top:14px"><span class="note">The model says <b>{{ p.pred_home }}–{{ p.pred_away }}</b> ({{ p.confidence|pct }} {{ p.pick|pick_word|lower }}).</span>
+      <button class="btn ghost sm" data-usemodel="{{ p.pred_home }}-{{ p.pred_away }}">Use model's pick</button></div>{% endif %}
+
+    <div class="opt">
+      <div class="eyebrow" style="margin-top:6px">Bonus picks · optional</div>
+      <div class="toggle-row"><span>Half-time result</span>
+        <div class="seg" data-input="ht_result" data-clear="1"><button data-value="H">{{ match.home.short }}</button><button data-value="D">Draw</button><button data-value="A">{{ match.away.short }}</button></div>
+        <input type="hidden" name="ht_result" value="{{ pick.ht_result|default:'' }}"></div>
+      <div class="toggle-row"><span>Any red card?</span>
+        <div class="seg" data-input="red_card" data-clear="1"><button data-value="yes">Yes</button><button data-value="no">No</button></div>
+        <input type="hidden" name="red_card" value="{% if pick.red_card is True %}yes{% elif pick.red_card is False %}no{% endif %}"></div>
+      <div class="toggle-row"><span>Yellow cards <span class="muted tiny">line 3.5</span></span>
+        <div class="seg" data-input="yellows_over" data-clear="1"><button data-value="over">Over</button><button data-value="under">Under</button></div>
+        <input type="hidden" name="yellows_over" value="{% if pick.yellows_over is True %}over{% elif pick.yellows_over is False %}under{% endif %}"></div>
+      <div class="toggle-row"><span>Corners <span class="muted tiny">line 9.5</span></span>
+        <div class="seg" data-input="corners_over" data-clear="1"><button data-value="over">Over</button><button data-value="under">Under</button></div>
+        <input type="hidden" name="corners_over" value="{% if pick.corners_over is True %}over{% elif pick.corners_over is False %}under{% endif %}"></div>
+      <div class="field" style="margin-top:8px"><label for="fgw{{ match.id }}">First goal</label>
+        <select id="fgw{{ match.id }}" class="input" name="first_goal_window"><option value="">No pick</option>
+          {% for k, lab in windows %}<option value="{{ k }}" {% if pick.first_goal_window == k %}selected{% endif %}>{{ lab }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="fsc{{ match.id }}">First scorer</label>
+        <select id="fsc{{ match.id }}" class="input" name="first_scorer"><option value="">No pick</option>
+          {% regroup players by team as groups %}
+          {% for g in groups %}<optgroup label="{{ g.grouper.name }}">{% for pl in g.list %}<option value="{{ pl.name }}" {% if pick.first_scorer == pl.name %}selected{% endif %}>{{ pl.name }} · {{ pl.pos }}</option>{% endfor %}</optgroup>{% endfor %}
+        </select></div>
+    </div>
+    <button class="btn lg" type="submit" style="width:100%;margin-top:20px">{% if pick %}Update prediction{% else %}Lock in prediction{% endif %}</button>
+    {% if not user.is_authenticated %}<p class="note center" style="margin-top:10px">You'll be asked to sign in to save it.</p>{% endif %}
+    <p class="note center" style="margin-top:10px">Result 3 pts · exact score +5 · half-time +2 · red-card call up to +4 · upset calls +3 · streak bonuses. Bonus picks are never penalised if you skip them.</p>
+  </form>
+  {% endif %}
+</div>

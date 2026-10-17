@@ -1,0 +1,60 @@
+{% extends "predictor/base.html" %}{% load mdy %}
+{% block title %}{{ season.label }} predictions{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="eyebrow">Premier League {{ season.label }}</div>
+  <h1>Every match.<br>Predicted before kick-off.</h1>
+  <p class="lede">Scores, goal timing, scorers, cards and more for all {{ n_matches }} fixtures, from a model that has never seen a {{ season.label }} result. Then make your own call and see if you can beat it.</p>
+  <div class="row wrap" style="margin-top:22px"><a class="btn lg" href="{% url 'matches' %}">Browse matchweek {{ week }}</a><a class="btn lg secondary" href="{% url 'table' %}">Projected table</a></div>
+</section>
+
+<section>
+  <div class="grid g3">
+    <div class="card"><div class="stat"><b>0</b><span>{{ season.label }} results used by the model</span></div><p class="note" style="margin-top:12px">{{ provenance }}</p></div>
+    <div class="card"><div class="stat"><b>{{ n_matches }}</b><span>Matches forecast, with minute-by-minute scenarios</span></div><p class="note" style="margin-top:12px"><a href="{% url 'accuracy' %}">See how the model did on past seasons →</a></p></div>
+    <div class="card"><div class="stat"><b>{{ n_users }}</b><span>Predictors competing to beat the model</span></div><p class="note" style="margin-top:12px"><a href="{% url 'leaderboard' %}">Leaderboard →</a></p></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><div><h2>Matchweek {{ week }}</h2><p>Tap a match for the full story: goal times, scorers, cards.</p></div><a class="btn secondary sm" href="{% url 'matches' %}?week={{ week }}">All of matchweek {{ week }}</a></div>
+  <div class="grid auto">{% for m in matches %}{% include "predictor/partials/match_card.html" with m=m show_week=False %}{% endfor %}</div>
+</section>
+
+<section>
+  <div class="sec-head"><div><h2>Model highlights</h2><p>Upcoming fixtures where the numbers say something.</p></div></div>
+  <div class="grid g3">
+    <div class="card"><h3>Boldest calls</h3><p class="note">Highest-confidence result</p>
+      <ul class="list">{% for m in bold %}<li><a class="nm" href="{% url 'match' m.id %}" style="color:inherit">{{ m.home.short }} v {{ m.away.short }}<span class="pos">GW {{ m.matchweek }}</span></a><span class="chip accent">{{ m.prediction.confidence|pct }} {{ m.prediction.pick|pick_word }}</span></li>{% endfor %}</ul></div>
+    <div class="card"><h3>Goal fests</h3><p class="note">Most goals expected</p>
+      <ul class="list">{% for m in goals %}<li><a class="nm" href="{% url 'match' m.id %}" style="color:inherit">{{ m.home.short }} v {{ m.away.short }}<span class="pos">GW {{ m.matchweek }}</span></a><span class="chip green">{{ m.prediction.xg_home|add:m.prediction.xg_away|dec }} xG</span></li>{% endfor %}</ul></div>
+    <div class="card"><h3>Too close to call</h3><p class="note">Smallest gap between the two sides</p>
+      <ul class="list">{% for m in tight %}<li><a class="nm" href="{% url 'match' m.id %}" style="color:inherit">{{ m.home.short }} v {{ m.away.short }}<span class="pos">GW {{ m.matchweek }}</span></a><span class="chip orange">{{ m.prediction.p_home|pct }} / {{ m.prediction.p_away|pct }}</span></li>{% endfor %}</ul></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><div><h2>Projected finish</h2><p>From simulating the whole season 4,000 times.</p></div><a class="btn secondary sm" href="{% url 'table' %}">Full table</a></div>
+  <div class="grid g2">
+    <div class="card tblcard"><table class="tbl"><thead><tr><th>#</th><th>Team</th><th class="r">Pts</th><th class="r">Title</th></tr></thead><tbody>
+      {% for r in top %}<tr><td class="pos">{{ forloop.counter }}</td><td><a href="{% url 'team' r.team.slug %}" style="color:inherit;font-weight:600">{{ r.team.name }}</a></td><td class="r">{{ r.exp_points|dec }}</td><td class="r">{{ r.p_title|pct }}</td></tr>{% endfor %}</tbody></table></div>
+    <div class="card tblcard"><table class="tbl"><thead><tr><th>Relegation battle</th><th class="r">Pts</th><th class="r">Go down</th></tr></thead><tbody>
+      {% for r in bottom %}<tr><td><a href="{% url 'team' r.team.slug %}" style="color:inherit;font-weight:600">{{ r.team.name }}</a></td><td class="r">{{ r.exp_points|dec }}</td><td class="r">{{ r.p_relegation|pct }}</td></tr>{% endfor %}</tbody></table></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><div><h2>Beat the model</h2><p>Predict a score, earn points, climb the levels from Rookie to Oracle.</p></div><a class="btn secondary sm" href="{% url 'leaderboard' %}">Leaderboard</a></div>
+  {% if board %}<div class="card tblcard"><table class="tbl"><tbody>{% for r in board %}<tr><td class="pos">{{ r.rank }}</td><td style="font-weight:600">{{ r.user }}</td><td><span class="chip accent">{{ r.level }}</span></td><td class="r pts">{{ r.points }} pts</td></tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="card"><p class="muted" style="margin:0">No scored predictions yet. Results are recorded as matches finish; yours will appear here. <a href="{% url 'matches' %}">Make a prediction →</a></p></div>{% endif %}
+</section>
+
+<section>
+  <div class="grid g4 g-keep2">
+    <a class="card link tight" href="{% url 'teams' %}"><h3>Teams</h3><p class="note" style="margin:6px 0 0">Attack and defence ratings</p></a>
+    <a class="card link tight" href="{% url 'players' %}"><h3>Players</h3><p class="note" style="margin:6px 0 0">Golden Boot race, card watch</p></a>
+    <a class="card link tight" href="{% url 'accuracy' %}"><h3>Accuracy</h3><p class="note" style="margin:6px 0 0">Ten seasons of backtests</p></a>
+    {% if can_studio %}<a class="card link tight" href="{% url 'studio' %}"><h3>Data Studio</h3><p class="note" style="margin:6px 0 0">Add data, predict next season</p></a>{% endif %}
+  </div>
+</section>
+{% endblock %}

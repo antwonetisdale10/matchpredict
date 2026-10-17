@@ -1,0 +1,37 @@
+{% load mdy %}{% with p=m.prediction %}
+<article class="card" style="padding:0">
+  <a class="match" href="{% url 'match' m.id %}">
+    <div class="kick">
+      <time datetime="{{ m.kickoff|local_iso }}" data-fmt="short">{{ m.kickoff|date:"D j M, H:i" }}</time>
+      <span>{% if show_week %}<span class="chip">GW {{ m.matchweek }}</span>{% endif %}
+        {% if m.played %}<span class="chip">Full time</span>{% elif m.locked %}<span class="chip orange">Kicked off</span>{% endif %}</span>
+    </div>
+    <div class="teams">
+      <div class="tm">{% include "predictor/partials/crest.html" with t=m.home size="" %}<span>{{ m.home.name }}</span></div>
+      <div class="center">
+        {% if m.played %}
+          <div class="scoreline final">{{ m.home_goals }}<small>–</small>{{ m.away_goals }}</div>
+          <div class="tiny {% if p and p.pred_home == m.home_goals and p.pred_away == m.away_goals %}ok{% elif p and p.pick == m.result_letter %}ok{% else %}bad{% endif %}" style="margin-top:6px;font-weight:600">
+            Model {{ p.pred_home }}–{{ p.pred_away }}{% if p and p.pick == m.result_letter %} ✓{% else %} ✗{% endif %}</div>
+        {% elif p %}
+          <div class="scoreline">{{ p.pred_home }}<small>–</small>{{ p.pred_away }}</div>
+          <div class="tiny muted" style="margin-top:6px;font-weight:600">Predicted</div>
+        {% else %}<div class="scoreline muted">v</div>{% endif %}
+      </div>
+      <div class="tm">{% include "predictor/partials/crest.html" with t=m.away size="" %}<span>{{ m.away.name }}</span></div>
+    </div>
+    {% if p %}
+    <div class="probs">
+      <div class="pbar" role="img" aria-label="Home {{ p.p_home|pct }}, draw {{ p.p_draw|pct }}, away {{ p.p_away|pct }}">
+        <i class="h" data-w="{{ p.p_home|times100|floatformat:1 }}"></i><i class="d" data-w="{{ p.p_draw|times100|floatformat:1 }}"></i><i class="a" data-w="{{ p.p_away|times100|floatformat:1 }}"></i>
+      </div>
+      <div class="plabels"><span><b>{{ p.p_home|pct }}</b> {{ m.home.short }}</span><span>Draw <b>{{ p.p_draw|pct }}</b></span><span>{{ m.away.short }} <b>{{ p.p_away|pct }}</b></span></div>
+    </div>
+    <div class="meta-row"><span class="chip">Over 2.5 · {{ p.p_over25|pct }}</span><span class="chip">Both score · {{ p.p_btts|pct }}</span><span class="chip">xG {{ p.xg_home|dec }}–{{ p.xg_away|dec }}</span></div>
+    {% endif %}
+  </a>
+  <div class="row between" style="padding:0 20px 16px">
+    <span class="chip accent" data-pick-tag="{{ m.id }}" {% if not m.my_pick %}hidden{% endif %}>{% if m.my_pick %}Your pick {{ m.my_pick.home_goals }}–{{ m.my_pick.away_goals }}{% if m.my_pick.settled %} · {{ m.my_pick.points }} pts{% endif %}{% endif %}</span>
+    {% if not m.locked %}<button class="btn sm secondary" data-pick="{{ m.id }}" style="margin-left:auto">{% if m.my_pick %}Edit pick{% else %}Predict{% endif %}</button>{% endif %}
+  </div>
+</article>{% endwith %}

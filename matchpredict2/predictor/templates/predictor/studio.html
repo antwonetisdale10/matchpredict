@@ -1,0 +1,51 @@
+{% extends "predictor/base.html" %}{% load mdy %}
+{% block title %}Data Studio{% endblock %}
+{% block content %}
+<section class="hero" style="padding-top:8px"><div class="eyebrow">Data Studio</div><h1>Add data. Predict a new season.</h1>
+<p class="lede">Feed the model more seasons, load next season's fixtures (or generate them), and run the forecast. A season is always predicted from results of earlier seasons only.</p></section>
+
+{% if job %}<section style="margin-top:22px"><div class="card" id="job" data-id="{{ job }}"><div class="row between"><b>Forecast running</b><span class="tiny muted">keep this page open</span></div><div class="proj-bar" style="width:100%;margin-top:12px;height:8px"><i style="width:0;background:var(--accent);transition:width .6s"></i></div><span class="tiny muted" style="display:block;margin-top:8px">Starting…</span></div></section>{% endif %}
+
+<section style="margin-top:28px"><div class="card tblcard"><table class="tbl"><thead><tr><th>Season</th><th class="r">Matches</th><th class="r">Results in</th><th class="r">Predicted</th></tr></thead><tbody>
+{% for s in all_seasons %}<tr><td><b>{{ s.label }}</b></td><td class="r">{{ s.n }}</td><td class="r">{{ s.played }}</td><td class="r">{% if s.preds %}<span class="chip green">{{ s.preds }} matches</span>{% else %}<span class="muted">–</span>{% endif %}</td></tr>{% endfor %}</tbody></table></div></section>
+
+<section><div class="grid g2" style="align-items:start">
+  <form class="card stack" method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="action" value="add_season">
+    <h3>1 · Add a finished season</h3><p class="note">Football-data.co.uk format (Date, HomeTeam, AwayTeam, FTHG, FTAG, optional HTHG, cards, corners…). Use this for 2025/26 and later so the model learns from them. <a href="{% url 'sample' 'season' %}">Sample CSV</a></p>
+    <div class="field"><label>Season start year</label><input type="number" name="year" value="2025" min="1990" max="2100"></div>
+    <div class="field"><label>CSV file</label><input type="file" name="file" accept=".csv" required></div>
+    <label class="check"><input type="checkbox" name="replace"> Replace if it already exists</label><button class="btn" type="submit">Import season</button></form>
+
+  <form class="card stack" method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="action" value="fixtures">
+    <h3>2a · Upload a fixture list</h3><p class="note">Columns: matchweek, date, time, home, away. Any score columns are ignored. <a href="{% url 'sample' 'fixtures' %}">Sample CSV</a></p>
+    <div class="field"><label>Season start year</label><input type="number" name="year" value="{{ next_year }}" min="1990" max="2100"></div>
+    <div class="field"><label>CSV file</label><input type="file" name="file" accept=".csv" required></div>
+    <label class="check"><input type="checkbox" name="replace"> Replace existing fixtures</label><button class="btn" type="submit">Load fixtures</button></form>
+
+  <form class="card stack" method="post">{% csrf_token %}<input type="hidden" name="action" value="generate">
+    <h3>2b · …or generate fixtures</h3><p class="note">No official list yet? Enter the 20 clubs and the studio builds a balanced home-and-away schedule (38 matchweeks).</p>
+    <div class="field"><label>Season start year</label><input type="number" name="year" value="{{ next_year }}" min="1990" max="2100"></div>
+    <div class="field"><label>Teams, one per line (edit for promotions and relegations)</label><textarea name="teams" required>{{ default_teams }}</textarea></div>
+    <label class="check"><input type="checkbox" name="replace"> Replace existing fixtures</label><button class="btn" type="submit">Generate fixtures</button></form>
+
+  <div class="stack">
+    <form class="card stack" method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="action" value="players">
+      <h3>3 · Squads <span class="muted">(optional)</span></h3><p class="note">For scorer and card predictions. Columns: name, club, pos, start_price, g_prev, a_prev, min_prev… <a href="{% url 'sample' 'players' %}">Sample CSV</a></p>
+      <div class="field"><label>Season start year</label><input type="number" name="year" value="{{ next_year }}" min="1990" max="2100"></div>
+      <div class="field"><label>CSV file</label><input type="file" name="file" accept=".csv" required></div><button class="btn secondary" type="submit">Load squads</button></form>
+    <form class="card stack" method="post">{% csrf_token %}<input type="hidden" name="action" value="predict">
+      <h3>4 · Run the forecast</h3><p class="note">Predicts every fixture of the season using results from earlier seasons only. Takes about half a minute.</p>
+      <div class="field"><label>Season</label><select class="input" name="year">{% for s in all_seasons %}{% if s.n and not s.played == s.n %}<option value="{{ s.start_year }}">{{ s.label }}</option>{% endif %}{% endfor %}</select></div>
+      <button class="btn lg" type="submit">Predict season</button></form>
+  </div>
+</div></section>
+
+<section><div class="sec-head"><div><h2>Record results</h2><p>When matches finish, record real results to score everyone's predictions. The model never reads these for the season it already predicted.</p></div></div>
+<div class="grid g2" style="align-items:start">
+  <form class="card stack" method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="action" value="results">
+    <h3>Upload results CSV</h3><p class="note">football-data.co.uk format; rows are matched to existing fixtures by team names.</p>
+    <div class="field"><label>Season start year</label><input type="number" name="year" value="{{ season.start_year|default:2026 }}"></div>
+    <div class="field"><label>CSV file</label><input type="file" name="file" accept=".csv" required></div><button class="btn" type="submit">Record results</button></form>
+  <div class="card"><h3>Or one match at a time</h3>{% if unplayed %}<ul class="list" style="margin-top:8px">{% for m in unplayed %}<li><span class="nm">{{ m.home.short }} v {{ m.away.short }}<span class="pos">GW {{ m.matchweek }}</span></span><a class="btn sm secondary" href="{% url 'record_result' m.id %}">Enter result</a></li>{% endfor %}</ul>{% else %}<p class="muted">No kicked-off matches are waiting for a result.</p>{% endif %}</div>
+</div></section>
+{% endblock %}

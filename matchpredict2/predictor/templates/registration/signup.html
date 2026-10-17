@@ -1,0 +1,9 @@
+{% extends "predictor/base.html" %}
+{% block title %}Create account{% endblock %}
+{% block content %}
+<div class="card login-card stack"><h1 style="font-size:2rem">Create account</h1><p class="muted">Pick a username to start predicting.</p>
+<form method="post" class="stack">{% csrf_token %}
+  {% for f in form %}<div class="field"><label for="{{ f.id_for_label }}">{{ f.label }}</label>{{ f }}{% if f.help_text %}<span class="helptext">{{ f.help_text|safe }}</span>{% endif %}{{ f.errors }}</div>{% endfor %}
+  <button class="btn lg" type="submit">Create account</button></form>
+<p class="note center">Already have one? <a href="{% url 'login' %}">Sign in</a></p></div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "predictor/base.html" %}{% load mdy %}
+{% block title %}{% if team %}{{ team.name }}{% else %}Matchweek {{ week }}{% endif %}{% endblock %}
+{% block content %}
+<section class="hero" style="padding-top:8px">
+  <div class="eyebrow">{{ season.label }} fixtures</div>
+  <h1>{% if team %}{{ team.name }}{% else %}Matchweek {{ week }}{% endif %}</h1>
+</section>
+<div class="row wrap between" style="margin-top:18px;gap:10px">
+  <select class="select" aria-label="Filter by team" data-nav>
+    <option value="{% url 'matches' %}{% if week %}?week={{ week }}{% endif %}">All teams</option>
+    {% for t in teams %}<option value="{% url 'matches' %}?team={{ t.slug }}{% if week %}&week={{ week }}{% endif %}" {% if team and team.id == t.id %}selected{% endif %}>{{ t.name }}</option>{% endfor %}
+  </select>
+  {% if team %}<span class="row"><a class="chip accent" href="{% url 'team' team.slug %}">Team page →</a>{% if week %}<a class="chip" href="{% url 'matches' %}?team={{ team.slug }}">Show whole season</a>{% endif %}</span>{% endif %}
+</div>
+<div class="weeks" style="margin-top:14px"><div class="seg" data-thumb>
+  {% for w in weeks %}<a href="{% url 'matches' %}?{% if team %}team={{ team.slug }}&{% endif %}week={{ w }}" class="{% if w == week %}on{% endif %}{% if w == now_week %} now{% endif %}" {% if w == week %}aria-current="true"{% endif %}>{{ w }}<span class="dot"></span></a>{% endfor %}
+</div></div>
+{% if team and proj and not week %}
+<div class="grid g4 g-keep2" style="margin-top:22px">
+  <div class="card tight stat"><b>{{ proj.exp_rank|dec }}</b><span>Expected finish</span></div>
+  <div class="card tight stat"><b>{{ proj.exp_points|dec:0 }}</b><span>Projected points</span></div>
+  <div class="card tight stat"><b>{{ proj.p_top4|pct }}</b><span>Top-four chance</span></div>
+  <div class="card tight stat"><b>{{ proj.p_relegation|pct }}</b><span>Relegation risk</span></div>
+</div>
+{% endif %}
+<section style="margin-top:26px">
+  {% if items %}<div class="grid auto">{% for m in items %}{% include "predictor/partials/match_card.html" with m=m show_week=True %}{% endfor %}</div>
+  {% else %}<div class="empty">No matches found.</div>{% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "predictor/base.html" %}{% load mdy %}
+{% block title %}Leaderboard{% endblock %}
+{% block content %}
+<section class="hero" style="padding-top:8px"><div class="eyebrow">{{ season.label }}</div><h1>Leaderboard</h1>
+<p class="lede">Predict matches, earn points when real results come in, and see who's beating the model.</p></section>
+{% if weeks %}<div class="weeks" style="margin-top:16px"><div class="seg" data-thumb><a href="{% url 'leaderboard' %}" class="{% if not week %}on{% endif %}">All season</a>{% for w in weeks %}<a href="?week={{ w }}" class="{% if w == week %}on{% endif %}">GW {{ w }}</a>{% endfor %}</div></div>{% endif %}
+<section style="margin-top:22px"><div class="grid g2" style="align-items:start">
+  <div class="card tblcard">
+    {% if model_avg is not None %}<div class="row between" style="padding:14px 16px;border-bottom:.5px solid var(--line)"><div><b>The model</b><div class="tiny muted">{{ model_n }} matches played</div></div><div class="right"><span class="pts">{{ model_pts }} pts</span><div class="tiny muted">{{ model_avg|dec:2 }} per match</div></div></div>{% endif %}
+    {% if rows %}<table class="tbl"><thead><tr><th>#</th><th>Player</th><th class="r hide-m">Picks</th><th class="r hide-m">Right</th><th class="r hide-m">Exact</th><th class="r">Points</th></tr></thead><tbody>
+    {% for r in rows %}<tr><td class="pos">{{ r.rank }}</td><td><b>{{ r.user }}</b> <span class="chip accent" style="margin-left:6px">{{ r.level }}</span></td><td class="r hide-m">{{ r.n }}</td><td class="r hide-m">{{ r.correct }}</td><td class="r hide-m">{{ r.exact }}</td><td class="r pts">{{ r.points }}</td></tr>{% endfor %}</tbody></table>
+    {% else %}<div style="padding:34px 20px;text-align:center" class="muted">No scored predictions yet{% if week %} for this matchweek{% endif %}. Picks are scored when results are recorded.<br><a href="{% url 'matches' %}">Make a prediction →</a></div>{% endif %}
+  </div>
+  <div class="stack">
+    <div class="card"><h3>How points work</h3><dl class="kv small" style="margin-top:12px">
+      <dt>Correct result</dt><dd>+{{ points.result }}</dd><dt>Exact score</dt><dd>+{{ points.exact }}</dd><dt>Half-time result</dt><dd>+{{ points.ht }}</dd>
+      <dt>Red card called right (yes / no)</dt><dd>+{{ points.red_yes }} / +{{ points.red_no }}</dd><dt>Yellows or corners line</dt><dd>+{{ points.yellows }} each</dd>
+      <dt>First-goal window</dt><dd>+{{ points.first_window }}</dd><dt>First scorer</dt><dd>+{{ points.first_scorer }}</dd><dt>Upset call (model &lt;25%)</dt><dd>+{{ points.upset }}</dd><dt>Streak (3+ right in a row)</dt><dd>+1 to +3</dd></dl>
+      <p class="note" style="margin-top:10px">Skipped bonus picks never cost you points. First-scorer and first-goal bonuses are scored when goal events are recorded.</p></div>
+    <div class="card"><h3>Levels</h3><div class="row wrap" style="margin-top:12px;gap:8px">{% for need, name in levels %}<span class="chip accent">{{ name }} · {{ need }}+</span>{% endfor %}</div></div>
+  </div>
+</div></section>
+{% endblock %}

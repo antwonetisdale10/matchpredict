@@ -1,0 +1,60 @@
+{% load static mdy %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<title>{% block title %}Matchday{% endblock %} · Matchday</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='1' x2='1' y2='0'%3E%3Cstop stop-color='%2334c759'/%3E%3Cstop offset='1' stop-color='%230a84ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='9' fill='url(%23g)'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="{% static 'predictor/app.css' %}">
+{% block head %}{% endblock %}
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.2 12 4l8 7.2V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z" fill="currentColor"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><path d="M7 2.5v3M17 2.5v3M3.5 9h17M5.5 4.5h13a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-12a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+  <symbol id="i-table" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4.5c0 3 1.5 4.5 3.7 4.8M16 6h3.5c0 3-1.5 4.5-3.7 4.8M12 13v4M8.5 20h7M10 17h4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M4.5 20c.8-4 3.7-5.5 7.5-5.5s6.700 1.500 7.500 5.500" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+</defs></svg>
+<header class="nav">
+  <div class="container">
+    <a class="brand" href="{% url 'home' %}"><i></i>Matchday</a>
+    <nav class="links" aria-label="Main">
+      <a href="{% url 'home' %}" {% if request.resolver_match.url_name == 'home' %}aria-current="page"{% endif %} class="tab-only"><svg><use href="#i-home"/></svg><span>Home</span></a>
+      <a href="{% url 'matches' %}" {% if request.resolver_match.url_name in 'matches,match' %}aria-current="page"{% endif %}><svg><use href="#i-cal"/></svg><span>Matches</span></a>
+      <a href="{% url 'table' %}" {% if request.resolver_match.url_name == 'table' %}aria-current="page"{% endif %}><svg><use href="#i-table"/></svg><span>Table</span></a>
+      <a href="{% url 'teams' %}" class="hide-sm" {% if request.resolver_match.url_name in 'teams,team' %}aria-current="page"{% endif %}><span>Teams</span></a>
+      <a href="{% url 'players' %}" class="hide-sm" {% if request.resolver_match.url_name == 'players' %}aria-current="page"{% endif %}><span>Players</span></a>
+      <a href="{% url 'leaderboard' %}" {% if request.resolver_match.url_name == 'leaderboard' %}aria-current="page"{% endif %}><svg><use href="#i-trophy"/></svg><span>Ranks</span></a>
+      <a href="{% url 'accuracy' %}" class="hide-sm" {% if request.resolver_match.url_name == 'accuracy' %}aria-current="page"{% endif %}><span>Accuracy</span></a>
+      {% if can_studio %}<a href="{% url 'studio' %}" class="hide-sm" {% if request.resolver_match.url_name == 'studio' %}aria-current="page"{% endif %}><span>Data</span></a>{% endif %}
+      <a href="{% if user.is_authenticated %}{% url 'profile' %}{% else %}{% url 'login' %}{% endif %}" class="tab-only" {% if request.resolver_match.url_name == 'profile' %}aria-current="page"{% endif %}><svg><use href="#i-user"/></svg><span>{% if user.is_authenticated %}Me{% else %}Sign in{% endif %}</span></a>
+    </nav>
+    <div class="nav-right">
+      {% if predicted_seasons|length > 1 %}
+      <select class="select" aria-label="Season" data-nav>
+        {% for s in predicted_seasons %}<option value="?season={{ s.start_year }}" {% if s.id == season.id %}selected{% endif %}>{{ s.label }}</option>{% endfor %}
+      </select>
+      {% endif %}
+      {% if user.is_authenticated %}
+        <a class="chip accent hide-sm" href="{% url 'profile' %}">{{ user.username }}</a>
+        <form method="post" action="{% url 'logout' %}" class="hide-sm" style="margin:0">{% csrf_token %}<button class="btn ghost sm" type="submit">Sign out</button></form>
+      {% else %}
+        <a class="btn sm secondary hide-sm" href="{% url 'login' %}">Sign in</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+<main class="container">
+  {% for m in messages %}<div class="flash {{ m.tags }}">{{ m }}</div>{% endfor %}
+  {% block content %}{% endblock %}
+</main>
+<footer class="footer container">
+  Matchday predictions are statistical forecasts from 20 seasons of Premier League results. Not betting advice. Club colours are decorative; no club badges are used.
+</footer>
+<script src="{% static 'predictor/app.js' %}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

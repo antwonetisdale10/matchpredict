@@ -1,0 +1,158 @@
+{% extends "predictor/base.html" %}{% load mdy %}
+{% block title %}{{ m.home.name }} v {{ m.away.name }}{% endblock %}
+{% block content %}
+<div class="row between wrap" style="margin-bottom:14px">
+  <a class="btn ghost sm" href="{% url 'matches' %}?week={{ m.matchweek }}">‹ Matchweek {{ m.matchweek }}</a>
+  <span class="tiny muted">Predicted with {{ p.model_version|default:"no model yet" }}</span>
+</div>
+
+<section class="match-hero">
+  <div class="eyebrow"><time datetime="{{ m.kickoff|local_iso }}" data-fmt="long">{{ m.kickoff|date:"l j F, H:i" }}</time> · GW {{ m.matchweek }}</div>
+  <div class="teams">
+    <div class="tm"><a href="{% url 'team' m.home.slug %}">{% include "predictor/partials/crest.html" with t=m.home size="xl" %}</a><a href="{% url 'team' m.home.slug %}">{{ m.home.name }}</a></div>
+    <div>
+      {% if m.played %}<div class="scoreline xl final">{{ m.home_goals }}<small>–</small>{{ m.away_goals }}</div><div class="xg">Full time{% if m.ht_home is not None %} · HT {{ m.ht_home }}–{{ m.ht_away }}{% endif %}</div>
+      {% elif p %}<div class="scoreline xl">{{ p.pred_home }}<small>–</small>{{ p.pred_away }}</div><div class="xg">Most likely score · xG {{ p.xg_home|dec:2 }} – {{ p.xg_away|dec:2 }}</div>{% endif %}
+    </div>
+    <div class="tm"><a href="{% url 'team' m.away.slug %}">{% include "predictor/partials/crest.html" with t=m.away size="xl" %}</a><a href="{% url 'team' m.away.slug %}">{{ m.away.name }}</a></div>
+  </div>
+  {% if p %}
+  <div style="max-width:560px;margin:26px auto 0">
+    <div class="pbar lg"><i class="h" data-w="{{ p.p_home|times100|floatformat:1 }}"></i><i class="d" data-w="{{ p.p_draw|times100|floatformat:1 }}"></i><i class="a" data-w="{{ p.p_away|times100|floatformat:1 }}"></i></div>
+    <div class="plabels" style="font-size:.875rem"><span><b>{{ p.p_home|pct }}</b> {{ m.home.name }}</span><span>Draw <b>{{ p.p_draw|pct }}</b></span><span>{{ m.away.name }} <b>{{ p.p_away|pct }}</b></span></div>
+  </div>
+  {% endif %}
+  {% if m.played and actual %}<div class="callout" style="max-width:560px;margin:22px auto 0;text-align:left">The model predicted <b>{{ p.pred_home }}–{{ p.pred_away }}</b> and {% if p.pick == m.result_letter %}got the result right{% else %}missed the result{% endif %}{% if p.pred_home == m.home_goals and p.pred_away == m.away_goals %}, with the exact score{% endif %}. Model score on this match: <b>{{ actual.model_points }} pts</b>.</div>{% endif %}
+</section>
+
+{% if p %}
+<section>
+  <div class="sec-head"><div><h2>How it plays out</h2><p>The single most likely story for a {{ p.pred_home }}–{{ p.pred_away }} result, with goal times set at the typical moment for each goal.</p></div></div>
+  <div class="card">
+    <div class="who tiny" style="justify-content:space-between"><span class="row" style="gap:6px"><i style="width:10px;height:10px;border-radius:50%;background:var(--home);display:inline-block"></i>{{ m.home.name }}</span><span class="row" style="gap:6px">{{ m.away.name }}<i style="width:10px;height:10px;border-radius:50%;background:var(--away);display:inline-block"></i></span></div>
+    {% if tl %}
+    <div class="tl" role="img" aria-label="Predicted timeline of goals and cards">
+      <div class="track"></div><div class="half"></div>
+      {% for e in tl %}<div class="ev {{ e.side }}" style="left:{{ e.pos|floatformat:2 }}%" title="{{ e.label }} {{ e.player }}">
+        <span class="lab">{{ e.label }}</span><span class="pin {{ e.type }}">{% if e.type == 'goal' %}G{% endif %}</span><span class="stem"></span></div>{% endfor %}
+    </div>
+    <div class="axis"><span style="left:0">0′</span><span style="left:15.6%">15′</span><span style="left:31.2%">30′</span><span style="left:46.9%">45′</span><span style="left:62.5%">60′</span><span style="left:78.1%">75′</span><span style="left:93.7%">90′</span></div>
+    <ul class="events">
+      {% for e in tl %}<li><span class="min">{{ e.label }}</span><span class="ico {{ e.type }}"></span>
+        <span><b>{{ e.player }}</b>{% if e.type == 'goal' %} <span class="sub">assist {{ e.assist }}</span>{% elif e.type == 'yellow' %} <span class="sub">booked</span>{% endif %}<br><span class="sub">{% if e.side == 'home' %}{{ m.home.name }}{% else %}{{ m.away.name }}{% endif %}</span></span>
+        <span class="chip">{{ e.p|pct }}</span></li>{% endfor %}
+    </ul>
+    <p class="note" style="margin-top:12px">The % is that player's chance of scoring (goals) or being booked (cards) at any point in the match. Goal minutes come from the half-time split in 20 seasons of results plus a standard in-half goal-timing curve; the data has no minutes, so treat timing as a calibrated estimate.</p>
+    {% else %}<p class="muted">Goalless draw is the most likely outcome, so no goal events to show.</p>{% endif %}
+  </div>
+</section>
+
+<section>
+  <div class="grid g2">
+    <div class="card">
+      <div class="panel-title"><h3>When goals happen</h3><span class="chip">{{ d.first_goal.median_minute|floatformat:0|default:"–" }}′ typical first goal</span></div>
+      <div class="bars6">{% for lab, v in bins %}
+        <div class="col"><span class="v">{{ v|pct }}</span><div class="b" data-h="{% widthratio v 0.62 100 %}"></div><span class="l">{{ lab }}</span></div>{% endfor %}</div>
+      <p class="note" style="margin-top:10px">Chance of at least one goal in each 15-minute window.</p>
+    </div>
+    <div class="card">
+      <div class="panel-title"><h3>Key moments</h3></div>
+      <ul class="facts small">
+        <li><span><b>{{ d.first_goal.p_before_30|pct }}</b> chance the opener arrives before the 30th minute</span></li>
+        <li><span><b>{{ m.home.name }}</b> score first in <b>{{ d.first_goal.home|pct }}</b> of simulations, {{ m.away.name }} in <b>{{ d.first_goal.away|pct }}</b>, no goal in {{ d.first_goal.none|pct }}</span></li>
+        <li><span><b>{{ d.ht.H|pct }}</b> {{ m.home.short }} lead at half-time · <b>{{ d.ht.D|pct }}</b> level · <b>{{ d.ht.A|pct }}</b> {{ m.away.short }} lead</span></li>
+        <li><span><b>{{ d.p_late_goal|pct }}</b> chance of a goal after the 75th minute</span></li>
+        <li><span><b>{{ d.markets.p_penalty|pct }}</b> chance of a penalty being awarded</span></li>
+        <li><span><b>{{ p.p_red|pct }}</b> chance of a red card</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><div><h2>Who scores</h2><p>Built from each squad's goal record, minutes and penalty duties.</p></div></div>
+  <div class="grid g2">
+    <div class="card"><div class="panel-title"><h3>{{ m.home.name }}</h3><span class="muted tiny">anytime · first</span></div>
+      <ul class="list">{% for s in d.scorers.home %}<li><span class="nm">{{ s.name }}<span class="pos">{{ s.pos }}</span></span><div class="meter"><i style="width:{{ s.p_anytime|times100|floatformat:0 }}%"></i></div><span class="chip accent num">{{ s.p_anytime|pct }}</span><span class="chip num">{{ s.p_first|pct }}</span></li>{% endfor %}</ul></div>
+    <div class="card"><div class="panel-title"><h3>{{ m.away.name }}</h3><span class="muted tiny">anytime · first</span></div>
+      <ul class="list">{% for s in d.scorers.away %}<li><span class="nm">{{ s.name }}<span class="pos">{{ s.pos }}</span></span><div class="meter"><i style="width:{{ s.p_anytime|times100|floatformat:0 }}%;background:var(--away)"></i></div><span class="chip orange num">{{ s.p_anytime|pct }}</span><span class="chip num">{{ s.p_first|pct }}</span></li>{% endfor %}</ul></div>
+  </div>
+  <div class="card" style="margin-top:16px"><div class="panel-title"><h3>First goalscorer</h3><span class="muted tiny">top five overall</span></div>
+    <ul class="list">{% for s in d.first_scorer %}<li><span class="nm">{{ s.name }}<span class="pos">{% if s.side == 'home' %}{{ m.home.short }}{% else %}{{ m.away.short }}{% endif %}</span></span><span class="chip {% if s.side == 'home' %}accent{% else %}orange{% endif %} num">{{ s.p|pct }}</span></li>{% endfor %}</ul></div>
+</section>
+
+<section>
+  <div class="sec-head"><div><h2>Discipline</h2><p>Team card tendencies. The referee isn't known this far out, so this is a team-level view.</p></div></div>
+  <div class="grid g2">
+    <div class="card">
+      <div class="grid g3 g-keep2" style="gap:10px;margin-bottom:6px">
+        <div class="stat"><b>{{ p.exp_yellow_home|dec }}</b><span>{{ m.home.short }} yellows</span></div>
+        <div class="stat"><b>{{ p.exp_yellow_away|dec }}</b><span>{{ m.away.short }} yellows</span></div>
+        <div class="stat"><b>{{ d.cards.p_over_3_5_yellows|pct }}</b><span>4+ yellows</span></div>
+      </div>
+      <dl class="kv small" style="margin-top:12px"><dt>Red card (either side)</dt><dd>{{ p.p_red|pct }}</dd><dt>Red card · {{ m.home.short }} / {{ m.away.short }}</dt><dd>{{ d.cards.p_red_home|pct }} / {{ d.cards.p_red_away|pct }}</dd><dt>5+ yellows</dt><dd>{{ d.cards.p_over_4_5_yellows|pct }}</dd></dl>
+    </div>
+    <div class="card"><div class="panel-title"><h3>Most likely to be booked</h3></div>
+      <ul class="list">{% for c in d.cards.home|slice:":3" %}<li><span class="nm">{{ c.name }}<span class="pos">{{ m.home.short }} · {{ c.pos }}</span></span><span class="chip num" style="background:rgba(255,204,0,.2);color:#b38600">{{ c.p_booked|pct }}</span></li>{% endfor %}
+      {% for c in d.cards.away|slice:":3" %}<li><span class="nm">{{ c.name }}<span class="pos">{{ m.away.short }} · {{ c.pos }}</span></span><span class="chip num" style="background:rgba(255,204,0,.2);color:#b38600">{{ c.p_booked|pct }}</span></li>{% endfor %}</ul></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><div><h2>Match stats</h2><p>Expected totals from each side's recent seasons.</p></div></div>
+  <div class="card">
+    {% with st=d.stats %}
+    <div class="vs"><span class="l">{{ st.corners.home|dec }}</span><span class="lab">Corners</span><span class="r">{{ st.corners.away|dec }}</span></div>
+    <div class="vs"><span class="l">{{ st.shots.home|dec }}</span><span class="lab">Shots</span><span class="r">{{ st.shots.away|dec }}</span></div>
+    <div class="vs"><span class="l">{{ st.sot.home|dec }}</span><span class="lab">Shots on target</span><span class="r">{{ st.sot.away|dec }}</span></div>
+    <div class="vs"><span class="l">{{ st.fouls.home|dec }}</span><span class="lab">Fouls</span><span class="r">{{ st.fouls.away|dec }}</span></div>
+    <p class="note" style="margin-top:10px">Over 9.5 corners: <b>{{ st.corners.p_over_9_5|pct }}</b> · Over 10.5: <b>{{ st.corners.p_over_10_5|pct }}</b></p>
+    {% endwith %}
+  </div>
+</section>
+
+<section>
+  <div class="grid g2">
+    <div class="card"><div class="panel-title"><h3>Scoreline map</h3><span class="muted tiny">{{ m.home.short }} goals ↓ · {{ m.away.short }} goals →</span></div>
+      <div class="heat"><span></span>{% for i in "0123456" %}<span class="ax">{{ i }}</span>{% endfor %}
+        {% for row in d.grid %}<span class="ax">{{ forloop.counter0 }}</span>{% for v in row %}<span class="c {% if forloop.parentloop.counter0 == p.pred_home and forloop.counter0 == p.pred_away %}top{% endif %}" style="--o:{{ v|heat }}">{% widthratio v 1 100 as pv %}{{ pv }}</span>{% endfor %}{% endfor %}</div>
+      <p class="note" style="margin-top:10px">Each cell is the chance of that exact score, in %. Outlined: the predicted score.</p></div>
+    <div class="card"><div class="panel-title"><h3>Goal markets</h3></div>
+      <dl class="kv small">
+        <dt>Over 1.5 goals</dt><dd>{{ d.markets.over15|pct }}</dd><dt>Over 2.5 goals</dt><dd>{{ d.markets.over25|pct }}</dd><dt>Over 3.5 goals</dt><dd>{{ d.markets.over35|pct }}</dd>
+        <dt>Both teams score</dt><dd>{{ d.markets.btts|pct }}</dd><dt>{{ m.home.short }} clean sheet</dt><dd>{{ d.markets.cs_home|pct }}</dd><dt>{{ m.away.short }} clean sheet</dt><dd>{{ d.markets.cs_away|pct }}</dd>
+        <dt>{{ m.home.short }} win by 2+</dt><dd>{{ d.markets.home_win_by2|pct }}</dd><dt>{{ m.away.short }} win by 2+</dt><dd>{{ d.markets.away_win_by2|pct }}</dd><dt>0–0</dt><dd>{{ d.markets.nil_nil|pct }}</dd>
+      </dl>
+      <div class="eyebrow" style="margin:16px 0 6px">Next most likely scores</div>
+      <div class="meta-row" style="margin-top:0">{% for s in d.top_scores|slice:"1:6" %}<span class="chip">{{ s.0 }}–{{ s.1 }} · {{ s.2|pct }}</span>{% endfor %}</div></div>
+  </div>
+</section>
+{% endif %}
+
+<section>
+  <div class="grid g2">
+    <div class="card"><div class="panel-title"><h3>Head to head</h3>{% if h2h %}<span class="chip">{{ m.home.short }} {{ record.0 }}W {{ record.1 }}D {{ record.2 }}L</span>{% endif %}</div>
+      {% if h2h %}<ul class="list">{% for x in h2h %}<li><span class="tiny muted" style="width:62px">{{ x.season.label }}</span><span class="nm">{{ x.home.short }} {{ x.home_goals }}–{{ x.away_goals }} {{ x.away.short }}</span></li>{% endfor %}</ul>
+      {% else %}<p class="muted">No earlier meetings in the dataset.</p>{% endif %}</div>
+    <div class="card"><div class="panel-title"><h3>Team ratings</h3><span class="muted tiny">goals vs an average side</span></div>
+      {% if rh and ra %}<div class="vs"><span class="l">{{ rh.attack|dec:2 }}×</span><span class="lab">Attack</span><span class="r">{{ ra.attack|dec:2 }}×</span></div>
+        <div class="vs"><span class="l">{{ rh.defence|dec:2 }}×</span><span class="lab">Defence (higher is better)</span><span class="r">{{ ra.defence|dec:2 }}×</span></div>
+        {% if rh.newcomer or ra.newcomer %}<p class="note" style="margin-top:8px">{% if rh.newcomer %}<b>{{ m.home.name }}</b>{% endif %}{% if rh.newcomer and ra.newcomer %} and {% endif %}{% if ra.newcomer %}<b>{{ m.away.name }}</b>{% endif %} have little recent Premier League data, so the model uses a newly-promoted prior.</p>{% endif %}{% endif %}</div>
+  </div>
+</section>
+
+<section>
+  <div class="card">
+    <div class="panel-title"><h3>Your prediction</h3>{% if pick and pick.settled %}<span class="chip green">{{ pick.points }} pts</span>{% endif %}</div>
+    {% if pick and pick.settled %}
+      <p>You picked <b>{{ pick.home_goals }}–{{ pick.away_goals }}</b>.</p>
+      <ul class="facts small">{% for b in pick.breakdown %}<li><span>{{ b.label }} <b class="ok">+{{ b.pts }}</b></span></li>{% empty %}<li><span>No points on this one.</span></li>{% endfor %}</ul>
+    {% else %}{% include "predictor/partials/pick_form.html" %}{% endif %}
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><h3>More from matchweek {{ m.matchweek }}</h3></div>
+  <div class="sib">{% for s in siblings %}<a class="chip {% if s.id == m.id %}accent{% endif %}" href="{% url 'match' s.id %}">{{ s.home.short }} v {{ s.away.short }}</a>{% endfor %}</div>
+</section>
+{% endblock %}

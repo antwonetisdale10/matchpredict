@@ -1,0 +1,12 @@
+{% extends "predictor/base.html" %}{% load mdy %}
+{% block title %}Teams{% endblock %}
+{% block content %}
+<section class="hero" style="padding-top:8px"><div class="eyebrow">{{ season.label }}</div><h1>Teams</h1>
+<p class="lede">Attack and defence are shown as goal multipliers against an average Premier League side: 1.30× attack means 30% more goals than average.</p></section>
+<section style="margin-top:24px"><div class="grid auto">
+{% for r in rows %}<a class="card link" href="{% url 'team' r.team.slug %}">
+  <div class="row">{% include "predictor/partials/crest.html" with t=r.team size="lg" %}<div class="grow"><h3>{{ r.team.name }}</h3><div class="tiny muted">{% if r.proj %}Projected {{ r.proj.exp_points|dec:0 }} pts · finish {{ r.proj.exp_rank|dec:0 }}{% endif %}</div>{% if r.newcomer %}<span class="chip purple" style="margin-top:4px">Little recent data</span>{% endif %}</div></div>
+  <div style="margin-top:16px"><div class="row between tiny"><span class="muted">Attack</span><b class="num">{{ r.attack|dec:2 }}×</b></div><div class="mini-bar"><i style="width:{% widthratio r.attack max_att 100 %}%"></i></div>
+  <div class="row between tiny" style="margin-top:10px"><span class="muted">Defence</span><b class="num">{{ r.defence|dec:2 }}×</b></div><div class="mini-bar"><i style="width:{% widthratio r.defence max_def 100 %}%;background:var(--green)"></i></div></div>
+</a>{% endfor %}</div></section>
+{% endblock %}

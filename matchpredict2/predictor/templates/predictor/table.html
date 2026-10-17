@@ -1,0 +1,16 @@
+{% extends "predictor/base.html" %}{% load mdy %}
+{% block title %}Projected table{% endblock %}
+{% block content %}
+<section class="hero" style="padding-top:8px"><div class="eyebrow">{{ season.label }}</div><h1>Projected table</h1>
+<p class="lede">The whole season simulated 4,000 times from the match-by-match score probabilities. Colour strips show the chance of finishing in each position (1st on the left).</p></section>
+<section style="margin-top:24px"><div class="card tblcard scroll-x"><table class="tbl">
+<thead><tr><th>#</th><th>Team</th><th class="r">Pts</th><th class="r hide-m">GF</th><th class="r hide-m">GA</th><th class="r">GD</th><th class="r">Title</th><th class="r hide-m">Top 4</th><th class="r">Down</th><th class="hide-m">Finish odds</th></tr></thead><tbody>
+{% for r in rows %}<tr>
+<td class="pos" style="box-shadow: inset 4px 0 0 {% if r.pos == 1 %}var(--green){% elif r.pos <= 4 %}var(--accent){% elif r.pos > n|add:'-3' %}var(--red){% else %}transparent{% endif %}">{{ r.pos }}</td>
+<td><a href="{% url 'team' r.team.slug %}" class="row" style="color:inherit;font-weight:600;gap:10px">{% include "predictor/partials/crest.html" with t=r.team size="sm" %}{{ r.team.name }}{% if r.rating.newcomer %}<span class="chip purple">Promoted prior</span>{% endif %}</a></td>
+<td class="r" style="font-weight:700">{{ r.exp_points|dec }}</td><td class="r hide-m">{{ r.exp_gf|dec:0 }}</td><td class="r hide-m">{{ r.exp_ga|dec:0 }}</td><td class="r">{% if r.gd > 0 %}+{% endif %}{{ r.gd|dec:0 }}</td>
+<td class="r">{{ r.p_title|pct }}</td><td class="r hide-m">{{ r.p_top4|pct }}</td><td class="r">{{ r.p_relegation|pct }}</td>
+<td class="hide-m"><div class="rankheat">{% for v in r.rank_dist %}<i style="--o:{{ v|heat }}" title="{{ forloop.counter }}: {{ v|pct }}"></i>{% endfor %}</div></td></tr>{% endfor %}
+</tbody></table></div>
+<p class="note" style="margin-top:14px">Green: title favourite · Blue: Champions League places (top 4) · Red: relegation zone. Projection reflects what the model knew before {{ season.label }}, trained on results up to the end of 2025/26 (no injuries or managers), so teams without recent top-flight data are rated with a "newly-promoted" prior.</p></section>
+{% endblock %}
